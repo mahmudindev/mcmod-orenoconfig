@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "orenoconfig",
+  "version": "${version}",
+  "name": "Oreno Config",
+  "description": "Provide config across mod loader.",
+  "authors": [
+    "mahmudindev"
+  ],
+  "contact": {
+    "homepage": "https://github.com/mahmudindev",
+    "sources": "https://github.com/mahmudindev/mcmod-orenoconfig"
+  },
+  "license": "ARR",
+  "icon": "assets/orenoconfig/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.github.mahmudindev.mcmod.orenoconfig.fabric.OrenoConfigFabric"
+    ],
+    "client": [
+      "com.github.mahmudindev.mcmod.orenoconfig.fabric.client.OrenoConfigFabricClient"
+    ]
+  },
+  "mixins": [
+    "orenoconfig.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.14",
+    "minecraft": "~1.20.1",
+    "java": ">=17",
+    "fabric-api": "*"
+  },
+  "suggests": {
+    "another-mod": "*"
+  }
+}
