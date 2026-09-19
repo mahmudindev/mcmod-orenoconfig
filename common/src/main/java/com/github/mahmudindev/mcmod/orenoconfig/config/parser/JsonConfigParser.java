@@ -5,13 +5,14 @@ import com.google.gson.*;
 
 import java.io.Reader;
 import java.io.Writer;
+import java.lang.reflect.Type;
 
 public class JsonConfigParser implements ConfigParser {
-    private static final Gson GSON = JsonConfigParser.getGson();
+    private final Gson gson = this.getGson();
 
     @Override
     public void serialize(ConfigNode parent, Writer writer) {
-        GSON.toJson(this.serializeNode(parent), writer);
+        this.gson.toJson(this.serializeNode(parent), writer);
     }
 
     private JsonObject serializeNode(ConfigNode node) {
@@ -22,7 +23,7 @@ public class JsonConfigParser implements ConfigParser {
             ConfigNode child = entry.getValue();
 
             if (child.isLeaf()) {
-                json.add(key, GSON.toJsonTree(child.getValue()));
+                json.add(key, this.gson.toJsonTree(child.getValue()));
                 continue;
             }
 
@@ -34,7 +35,7 @@ public class JsonConfigParser implements ConfigParser {
 
     @Override
     public void deserialize(Reader reader, ConfigNode node) {
-        this.deserializeNode(node, GSON.fromJson(reader, JsonObject.class));
+        this.deserializeNode(node, this.gson.fromJson(reader, JsonObject.class));
     }
 
     private void deserializeNode(ConfigNode node, JsonObject json) {
@@ -44,7 +45,7 @@ public class JsonConfigParser implements ConfigParser {
             JsonElement element = json.get(key);
 
             if (child.isLeaf()) {
-                Class<?> childValueType = child.getValueType();
+                Type childValueType = child.getValueType();
 
                 if (childValueType == null) {
                     childValueType = Object.class;
@@ -55,7 +56,7 @@ public class JsonConfigParser implements ConfigParser {
                     }
                 }
 
-                child.setValue(GSON.fromJson(element, childValueType));
+                child.setValue(this.gson.fromJson(element, childValueType));
                 continue;
             }
 
@@ -65,7 +66,7 @@ public class JsonConfigParser implements ConfigParser {
         }
     }
 
-    private static Gson getGson() {
+    private Gson getGson() {
         return new GsonBuilder()
                 .setObjectToNumberStrategy(ToNumberPolicy.LONG_OR_DOUBLE)
                 .setPrettyPrinting()

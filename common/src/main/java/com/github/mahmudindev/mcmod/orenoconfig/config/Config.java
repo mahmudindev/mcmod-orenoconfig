@@ -8,6 +8,7 @@ import java.io.Reader;
 import java.io.Writer;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
 import java.util.*;
 
 public class Config {
@@ -35,13 +36,17 @@ public class Config {
     }
 
     public void registerValue(String path, Object defaultValue) {
+        this.registerValue(path, defaultValue.getClass(), defaultValue);
+    }
+
+    public void registerValue(String path, Type type, Object defaultValue) {
         if (defaultValue == null) {
             throw new IllegalArgumentException("Default value cannot be null");
         }
 
         ConfigNode root = this.getWNode();
         ConfigNode node = root.getOrCreatePath(this.getSplitPath(path), 0);
-        node.setValueType(defaultValue.getClass());
+        node.setValueType(type);
         node.setDefaultValue(defaultValue);
     }
 
@@ -74,7 +79,7 @@ public class Config {
                 field.setAccessible(true);
 
                 try {
-                    paths[path.length - 1] = field.getName();
+                    paths[paths.length - 1] = field.getName();
 
                     Object value = field.get(pojo);
 
@@ -83,7 +88,7 @@ public class Config {
 
                         String name = category.name();
                         if (!name.isEmpty()) {
-                            paths[path.length - 1] = name;
+                            paths[paths.length - 1] = name;
                         }
 
                         if (value == null) {
@@ -100,13 +105,13 @@ public class Config {
                     if (option != null) {
                         String pathX = option.path();
                         if (!pathX.isEmpty()) {
-                            paths[path.length - 1] = pathX;
+                            paths[paths.length - 1] = pathX;
                         }
                     }
 
                     ConfigNode root = this.getWNode();
                     ConfigNode node = root.getOrCreatePath(paths, 0);
-                    node.setValueType(field.getType());
+                    node.setValueType(field.getGenericType());
                     node.setDefaultValue(value);
                 } catch (Exception e) {
                     throw new IllegalStateException("Failed to register Pojo object", e);
@@ -142,14 +147,14 @@ public class Config {
                 field.setAccessible(true);
 
                 try {
-                    paths[path.length - 1] = field.getName();
+                    paths[paths.length - 1] = field.getName();
 
                     if (field.isAnnotationPresent(ConfigCategory.class)) {
                         ConfigCategory category = field.getAnnotation(ConfigCategory.class);
 
                         String name = category.name();
                         if (!name.isEmpty()) {
-                            paths[path.length - 1] = name;
+                            paths[paths.length - 1] = name;
                         }
 
                         this.syncPojo(paths, field.get(pojo));
@@ -161,13 +166,13 @@ public class Config {
                     if (option != null) {
                         String pathX = option.path();
                         if (!pathX.isEmpty()) {
-                            paths[path.length - 1] = pathX;
+                            paths[paths.length - 1] = pathX;
                         }
                     }
 
                     ConfigNode root = this.getRNode();
                     ConfigNode node = root.getPath(paths, 0);
-                    field.set(pojo, node.getValue(field.getType()));
+                    field.set(pojo, node.getValue(field.getGenericType()));
                 } catch (Exception e) {
                     throw new IllegalStateException("Failed to sync Pojo object", e);
                 }
@@ -194,11 +199,11 @@ public class Config {
         return node != null ? node.getValue() : null;
     }
 
-    public <T> T get(String path, Class<T> clazz) {
+    public <T> T get(String path, Type type) {
         ConfigNode root = this.getRNode();
         ConfigNode node = root.getPath(this.getSplitPath(path), 0);
 
-        return node != null ? node.getValue(clazz) : null;
+        return node != null ? node.getValue(type) : null;
     }
 
     public void set(String path, Object value) {
@@ -227,6 +232,10 @@ public class Config {
     }
 
     protected String[] getSplitPath(String path) {
+        if (path.isEmpty()) {
+            return new String[0];
+        }
+
         return path.split("\\.");
     }
 }

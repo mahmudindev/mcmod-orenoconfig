@@ -1,15 +1,16 @@
 package com.github.mahmudindev.mcmod.orenoconfig.config;
 
-import com.github.mahmudindev.mcmod.orenoconfig.config.convert.ConfigValueConverter;
+import com.github.mahmudindev.mcmod.orenoconfig.config.convert.ValueConverter;
 
+import java.lang.reflect.Type;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class ConfigNode {
-    private Class<?> valueType;
+    private Type valueType;
     private Object defaultValue;
     private Object value;
-    private ConfigValueConverter valueConverter = ConfigValueConverter.GLOBAL;
+    private ValueConverter valueConverter = ValueConverter.GLOBAL;
     private final Map<String, ConfigNode> children = new LinkedHashMap<>();
 
     public ConfigNode() {}
@@ -33,17 +34,17 @@ public class ConfigNode {
         });
     }
 
-    public Class<?> getValueType() {
-        Class<?> clazz = this.valueType;
+    public Type getValueType() {
+        Type type = this.valueType;
 
-        if (clazz == null && this.defaultValue != null) {
-            clazz = this.defaultValue.getClass();
+        if (type == null && this.defaultValue != null) {
+            type = this.defaultValue.getClass();
         }
 
-        return clazz;
+        return type;
     }
 
-    protected void setValueType(Class<?> valueType) {
+    protected void setValueType(Type valueType) {
         this.valueType = valueType;
     }
 
@@ -63,9 +64,9 @@ public class ConfigNode {
         return this.defaultValue;
     }
 
-    public <T> T getValue(Class<T> clazz) {
-        if (clazz == null) {
-            return null;
+    public <T> T getValue(Type type) {
+        if (type == null) {
+            throw new IllegalArgumentException("Type cannot be null");
         }
 
         Object value = this.getValue();
@@ -74,76 +75,65 @@ public class ConfigNode {
             return null;
         }
 
-        Class<?> claxx = value.getClass();
+        Type typeX = this.getValueType();
 
-        if (claxx == clazz) {
+        if (typeX.equals(type)) {
             return (T) value;
         }
 
-        if (this.valueConverter != null && this.valueConverter.canConvert(claxx, clazz)) {
+        if (this.valueConverter != null) {
             try {
-                return valueConverter.convert(value, clazz);
+                return valueConverter.convert(value, typeX, type);
             } catch (Exception e) {
                 throw new RuntimeException(String.format(
                         "Unable to get and convert value from type %s to type %s",
-                        claxx,
-                        clazz
+                        typeX,
+                        type
                 ), e);
             }
         }
 
-        if (clazz.isAssignableFrom(claxx)) {
-            return clazz.cast(value);
-        }
-
         throw new IllegalArgumentException(String.format(
                 "Unable to get value from type %s to type %s",
-                claxx,
-                clazz
+                typeX,
+                type
         ));
     }
 
     public void setValue(Object value) {
+        this.setValue(value.getClass(), value);
+    }
+
+    public void setValue(Type type, Object value) {
         if (value == null) {
             this.value = null;
             return;
         }
 
-        Class<?> typeA = this.getValueType();
-        if (typeA == null) {
+        Type typeX = this.getValueType();
+
+        if (typeX == null || type.equals(typeX)) {
             this.value = value;
             return;
         }
 
-        Class<?> typeB = value.getClass();
-
-        if (typeB == typeA) {
-            this.value = value;
-            return;
-        }
-
-        if (this.valueConverter != null && this.valueConverter.canConvert(typeB, typeA)) {
+        if (this.valueConverter != null) {
             try {
-                this.value = valueConverter.convert(value, typeA);
+                this.value = valueConverter.convert(value, type, typeX);
                 return;
             } catch (Exception e) {
                 throw new RuntimeException(String.format(
                         "Unable to convert and set value to type %s from type %s",
-                        typeA,
-                        typeB
+                        typeX,
+                        type
                 ), e);
             }
         }
 
-        if (typeA.isAssignableFrom(typeB)) {
-            this.value = typeA.cast(value);
-            return;
-        }
-
         throw new IllegalArgumentException(String.format(
                 "Unable to set value to type %s from type %s",
-                typeA,
-                typeB
+                typeX,
+                type
         ));
     }
 
@@ -155,7 +145,7 @@ public class ConfigNode {
         return false;
     }
 
-    protected void setValueConverter(ConfigValueConverter valueConverter) {
+    protected void setValueConverter(ValueConverter valueConverter) {
         this.valueConverter = valueConverter;
 
         this.children.forEach((k, v) -> v.setValueConverter(valueConverter));

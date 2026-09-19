@@ -1,17 +1,22 @@
 package com.github.mahmudindev.mcmod.orenoconfig.config.parser;
 
 import com.electronwill.nightconfig.core.CommentedConfig;
-import com.electronwill.nightconfig.core.conversion.ObjectConverter;
 import com.electronwill.nightconfig.toml.TomlParser;
 import com.electronwill.nightconfig.toml.TomlWriter;
 import com.github.mahmudindev.mcmod.orenoconfig.config.ConfigNode;
+import com.google.gson.*;
 
 import java.io.Reader;
 import java.io.Writer;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 public class TomlConfigParser implements ConfigParser {
-    private static final TomlParser PARSER = new TomlParser();
-    private static final TomlWriter WRITER = new TomlWriter();
+    private final TomlParser parser = new TomlParser();
+    private final TomlWriter writer = new TomlWriter();
+    private final Gson gsonIntermediary = this.getGsonIntermediary();
 
     @Override
     public void serialize(ConfigNode node, Writer writer) {
@@ -19,7 +24,7 @@ public class TomlConfigParser implements ConfigParser {
 
         this.serializeNode(node, toml);
 
-        WRITER.write(toml, writer);
+        this.writer.write(toml, writer);
     }
 
     private void serializeNode(ConfigNode node, CommentedConfig toml) {
@@ -28,7 +33,8 @@ public class TomlConfigParser implements ConfigParser {
             ConfigNode child = entry.getValue();
 
             if (child.isLeaf()) {
-                toml.set(key, child.getValue());
+                JsonElement gson = this.gsonIntermediary.toJsonTree(child.getValue());
+                toml.set(key, this.serializeLeafNode(gson));
                 continue;
             }
 
@@ -38,9 +44,52 @@ public class TomlConfigParser implements ConfigParser {
         }
     }
 
+    private Object serializeLeafNode(JsonElement gson) {
+        if (gson.isJsonObject()) {
+            CommentedConfig subToml = CommentedConfig.inMemory();
+
+            JsonObject gsonObject = gson.getAsJsonObject();
+
+            for (Map.Entry<String, JsonElement> entry : gsonObject.entrySet()) {
+                if (entry.getValue().isJsonObject()) {
+                    continue;
+                }
+                subToml.set(entry.getKey(), this.serializeLeafNode(entry.getValue()));
+            }
+
+            for (Map.Entry<String, JsonElement> entry : gsonObject.entrySet()) {
+                if (!entry.getValue().isJsonObject()) {
+                    continue;
+                }
+                subToml.set(entry.getKey(), this.serializeLeafNode(entry.getValue()));
+            }
+
+            return subToml;
+        } else if (gson.isJsonArray()) {
+            List<Object> list = new ArrayList<>();
+
+            for (JsonElement item : gson.getAsJsonArray()) {
+                list.add(this.serializeLeafNode(item));
+            }
+
+            return list;
+        } else if (gson.isJsonPrimitive()) {
+            JsonPrimitive gsonPrimitive = gson.getAsJsonPrimitive();
+            if (gsonPrimitive.isBoolean()) {
+                return gsonPrimitive.getAsBoolean();
+            } else if (gsonPrimitive.isNumber()) {
+                return gsonPrimitive.getAsNumber();
+            } else if (gsonPrimitive.isString()) {
+                return gsonPrimitive.getAsString();
+            }
+        }
+
+        return null;
+    }
+
     @Override
     public void deserialize(Reader reader, ConfigNode node) {
-        this.deserializeNode(node, PARSER.parse(reader));
+        this.deserializeNode(node, this.parser.parse(reader));
     }
 
     private void deserializeNode(ConfigNode node, CommentedConfig toml) {
@@ -51,31 +100,21 @@ public class TomlConfigParser implements ConfigParser {
             ConfigNode child = node.getOrCreatePath(new String[]{key}, 0);
 
             if (child.isLeaf()) {
-                Class<?> childValueType = child.getValueType();
+                Type childValueType = child.getValueType();
 
                 if (childValueType == null) {
+                    childValueType = Object.class;
+
                     Object childValue = child.getValue();
                     if (childValue != null) {
                         childValueType = childValue.getClass();
                     }
                 }
 
-                if (childValueType != null && value instanceof CommentedConfig) {
-                    Class<?> objectType = childValueType;
-                    child.setValue((new ObjectConverter()).toObject(
-                            toml.get(key),
-                            () -> {
-                                try {
-                                    return objectType.getDeclaredConstructor().newInstance();
-                                } catch (Exception e) {
-                                    throw new RuntimeException(e);
-                                }
-                            }
-                    ));
-                    continue;
-                }
-
-                child.setValue(value);
+                child.setValue(this.gsonIntermediary.fromJson(
+                        this.deserializeLeafNode(value),
+                        childValueType
+                ));
                 continue;
             }
 
@@ -83,6 +122,42 @@ public class TomlConfigParser implements ConfigParser {
                 this.deserializeNode(child, subToml);
             }
         }
+    }
+
+    private JsonElement deserializeLeafNode(Object value) {
+        if  (value instanceof CommentedConfig subToml) {
+            JsonObject gsonObject = new JsonObject();
+
+            for (CommentedConfig.Entry entry : subToml.entrySet()) {
+                gsonObject.add(entry.getKey(), this.deserializeLeafNode(entry.getValue()));
+            }
+
+            return gsonObject;
+        } else if (value instanceof List) {
+            JsonArray gsonArray = new JsonArray();
+
+            for (Object item : (List<?>) value) {
+                gsonArray.add(this.deserializeLeafNode(item));
+            }
+
+            return gsonArray;
+        } else if (value instanceof Boolean) {
+            return new JsonPrimitive((Boolean) value);
+        } else if (value instanceof Number) {
+            return new JsonPrimitive((Number) value);
+        } else if (value instanceof String) {
+            return new JsonPrimitive((String) value);
+        } else if (value == null) {
+            return JsonNull.INSTANCE;
+        }
+
+        return this.gsonIntermediary.toJsonTree(value);
+    }
+
+    private Gson getGsonIntermediary() {
+        return new GsonBuilder()
+                .setObjectToNumberStrategy(ToNumberPolicy.LONG_OR_DOUBLE)
+                .create();
     }
 
     @Override

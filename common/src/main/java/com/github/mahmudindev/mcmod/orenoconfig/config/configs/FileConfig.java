@@ -28,7 +28,6 @@ public class FileConfig extends Config {
             this.fileExtension = name.substring(ie + 1);
         } else {
             this.name = name;
-            this.fileExtension = parser.getFileExtension();
         }
     }
 
@@ -53,6 +52,16 @@ public class FileConfig extends Config {
         return this.name;
     }
 
+    private String getFileExtension() {
+        String fileExtension = this.fileExtension;
+
+        if (fileExtension == null && this.parser != null) {
+            fileExtension = this.parser.getFileExtension();
+        }
+
+        return fileExtension;
+    }
+
     public void setFileExtension(String fileExtension) {
         this.fileExtension = fileExtension;
     }
@@ -63,8 +72,10 @@ public class FileConfig extends Config {
 
     public void load() {
         String name = this.getName();
-        if (this.fileExtension != null) {
-            name += "." + this.fileExtension;
+
+        String fileExtension = this.getFileExtension();
+        if (fileExtension != null) {
+            name += "." + fileExtension;
         }
 
         File file =  this.getDirectory().resolve(name).toFile();
@@ -82,8 +93,10 @@ public class FileConfig extends Config {
 
     public void save() {
         String name = this.getName();
-        if (this.fileExtension != null) {
-            name += "." + this.fileExtension;
+
+        String fileExtension = this.getFileExtension();
+        if (fileExtension != null) {
+            name += "." + fileExtension;
         }
 
         File file =  this.getDirectory().resolve(name).toFile();
