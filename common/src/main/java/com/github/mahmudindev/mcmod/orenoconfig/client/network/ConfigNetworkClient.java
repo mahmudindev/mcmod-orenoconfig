@@ -4,7 +4,7 @@ import com.github.mahmudindev.mcmod.orenocommons.client.network.UnifiedNetworkCl
 import com.github.mahmudindev.mcmod.orenocommons.network.UnifiedNetwork;
 import com.github.mahmudindev.mcmod.orenoconfig.network.ConfigNetwork;
 import com.github.mahmudindev.mcmod.orenoconfig.network.packet.ConfigPacket;
-import com.github.mahmudindev.mcmod.orenoevents.event.client.ClientPlayerEvents;
+import com.github.mahmudindev.mcmod.orenoevents.client.event.events.ClientPlayerEvents;
 import io.netty.buffer.Unpooled;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
