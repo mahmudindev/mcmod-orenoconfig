@@ -564,7 +564,7 @@ public class ConfigPacketParser {
         );
 
         registerValueParser(
-                new ResourceLocation(OrenoConfig.MOD_ID, "resourceLocation"),
+                new ResourceLocation(OrenoConfig.MOD_ID, "resourcelocation"),
                 ResourceLocation.class,
                 new ValueParser<>() {
                     @Override
@@ -580,7 +580,7 @@ public class ConfigPacketParser {
         );
 
         registerValueParser(
-                new ResourceLocation(OrenoConfig.MOD_ID, "blockPos"),
+                new ResourceLocation(OrenoConfig.MOD_ID, "blockpos"),
                 BlockPos.class,
                 new ValueParser<>() {
                     @Override
@@ -596,7 +596,7 @@ public class ConfigPacketParser {
         );
 
         registerValueParser(
-                new ResourceLocation(OrenoConfig.MOD_ID, "chunkPos"),
+                new ResourceLocation(OrenoConfig.MOD_ID, "chunkpos"),
                 ChunkPos.class,
                 new ValueParser<>() {
                     @Override
@@ -612,7 +612,7 @@ public class ConfigPacketParser {
         );
 
         registerValueParser(
-                new ResourceLocation(OrenoConfig.MOD_ID, "sectionPos"),
+                new ResourceLocation(OrenoConfig.MOD_ID, "sectionpos"),
                 SectionPos.class,
                 new ValueParser<>() {
                     @Override
