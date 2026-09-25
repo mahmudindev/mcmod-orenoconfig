@@ -1,7 +1,8 @@
 package com.github.mahmudindev.mcmod.orenoconfig.client.network;
 
 import com.github.mahmudindev.mcmod.orenocommons.client.network.UnifiedNetworkClient;
-import com.github.mahmudindev.mcmod.orenocommons.network.UnifiedNetwork;
+import com.github.mahmudindev.mcmod.orenocommons.client.network.UnifiedNetworkPacketClient;
+import com.github.mahmudindev.mcmod.orenocommons.network.UnifiedNetworkUtility;
 import com.github.mahmudindev.mcmod.orenoconfig.network.ConfigNetwork;
 import com.github.mahmudindev.mcmod.orenoconfig.network.packet.ConfigPacket;
 import com.github.mahmudindev.mcmod.orenoevents.client.event.events.ClientPlayerEvents;
@@ -53,15 +54,20 @@ public class ConfigNetworkClient {
         UnifiedNetworkClient.sendPacketToServer(ConfigNetwork.CHANNEL_NAME, buf);
     }
 
-    private static void handlePackets(Minecraft client, FriendlyByteBuf buf) {
-        UnifiedNetwork.readCompressedBuffer(buf, bufX -> {
+    private static void handlePackets(
+            UnifiedNetworkPacketClient.Context ctx,
+            FriendlyByteBuf buf
+    ) {
+        UnifiedNetworkUtility.readCompressedBuffer(buf, bufX -> {
+            Minecraft client = ctx.client();
+
             int count = bufX.readVarInt();
             for (int i = 0; i < count; i++) {
                 ResourceLocation id = bufX.readResourceLocation();
                 ConfigPacket packet = ConfigNetwork.getPacket(id);
                 packet.decode(bufX, client);
             }
-        });
+        }, 2_048_000);
     }
 
     private static void onClientPlayerDisconnect(LocalPlayer localPlayer) {

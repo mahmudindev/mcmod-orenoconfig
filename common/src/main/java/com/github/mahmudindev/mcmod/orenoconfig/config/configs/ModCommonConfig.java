@@ -24,7 +24,7 @@ public class ModCommonConfig extends ModConfig {
     @Override
     protected ConfigNode getRNode() {
         ModCommonConfig serverValue = SERVER_VALUES.get(this.getName());
-        if (serverValue != null) {
+        if (serverValue != null && !serverValue.equals(this)) {
             return serverValue.getRNode();
         }
 

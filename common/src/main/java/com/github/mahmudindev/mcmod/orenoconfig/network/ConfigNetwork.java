@@ -1,6 +1,8 @@
 package com.github.mahmudindev.mcmod.orenoconfig.network;
 
 import com.github.mahmudindev.mcmod.orenocommons.network.UnifiedNetwork;
+import com.github.mahmudindev.mcmod.orenocommons.network.UnifiedNetworkPacket;
+import com.github.mahmudindev.mcmod.orenocommons.network.UnifiedNetworkUtility;
 import com.github.mahmudindev.mcmod.orenoconfig.OrenoConfig;
 import com.github.mahmudindev.mcmod.orenoconfig.config.network.ModCommonConfigPacket;
 import com.github.mahmudindev.mcmod.orenoconfig.network.packet.ConfigPacket;
@@ -49,11 +51,12 @@ public class ConfigNetwork {
     }
 
     private static void handlePackets(
-            MinecraftServer server,
-            ServerPlayer serverPlayer,
+            UnifiedNetworkPacket.Context ctx,
             FriendlyByteBuf buf
     ) {
         Map<ResourceLocation, ConfigPacket> packets = new HashMap<>();
+
+        ServerPlayer serverPlayer = ctx.player();
 
         int count = buf.readVarInt();
         for (int i = 0; i < count; i++) {
@@ -74,7 +77,9 @@ public class ConfigNetwork {
 
         FriendlyByteBuf bufX = new FriendlyByteBuf(Unpooled.buffer());
 
-        UnifiedNetwork.writeCompressedBuffer(bufX, bufZ -> {
+        UnifiedNetworkUtility.writeCompressedBuffer(bufX, bufZ -> {
+            MinecraftServer server = ctx.server();
+
             bufZ.writeVarInt(packets.size());
             packets.forEach((id, packet) -> {
                 bufZ.writeResourceLocation(id);

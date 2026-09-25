@@ -61,6 +61,7 @@ public class ModCommonConfigPacket extends ModConfigPacket {
             FriendlyByteBuf bufX = new FriendlyByteBuf(Unpooled.buffer());
 
             this.encodeNodeTree(bufX, handler.getGetterNode());
+
             buf.writeVarInt(bufX.readableBytes());
             buf.writeBytes(bufX);
 
@@ -74,8 +75,10 @@ public class ModCommonConfigPacket extends ModConfigPacket {
         for (int i = 0; i < count; i++) {
             String key = buf.readUtf();
 
+            FriendlyByteBuf bufX = new FriendlyByteBuf(Unpooled.buffer());
+
             int readableBytes = buf.readVarInt();
-            FriendlyByteBuf bufX = new FriendlyByteBuf(buf.readSlice(readableBytes));
+            buf.readBytes(bufX, readableBytes);
 
             Handler handler = HANDLERS.get(key);
             if (handler != null) {

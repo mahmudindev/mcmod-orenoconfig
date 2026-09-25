@@ -101,6 +101,11 @@ public class ConfigNode {
     }
 
     public void setValue(Object value) {
+        if (value == null) {
+            this.value = null;
+            return;
+        }
+
         this.setValue(value.getClass(), value);
     }
 
