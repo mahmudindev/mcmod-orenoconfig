@@ -9,6 +9,9 @@ import com.github.mahmudindev.mcmod.orenoconfig.network.packet.ConfigPacket;
 import com.github.mahmudindev.mcmod.orenoevents.event.events.PlayerEvents;
 import io.netty.buffer.Unpooled;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -17,7 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ConfigNetwork {
-    public static final ResourceLocation CHANNEL_NAME = new ResourceLocation(
+    public static final ResourceLocation CHANNEL_NAME = ResourceLocation.fromNamespaceAndPath(
             OrenoConfig.MOD_ID,
             "default"
     );
@@ -25,11 +28,15 @@ public class ConfigNetwork {
 
     public static void init() {
         registerPacket(
-                new ResourceLocation(OrenoConfig.MOD_ID, "common"),
+                ResourceLocation.fromNamespaceAndPath(OrenoConfig.MOD_ID, "common"),
                 new ModCommonConfigPacket()
         );
 
-        UnifiedNetwork.registerServerPacketReceiver(CHANNEL_NAME, ConfigNetwork::handlePackets);
+        UnifiedNetwork.registerServerPacketReceiver(
+                Packet.TYPE,
+                Packet.STREAM_CODEC,
+                (ctx, value) -> handlePackets(ctx, value.buf())
+        );
 
         PlayerEvents.DISCONNECT.register(ConfigNetwork::onServerPlayerDisconnect);
     }
@@ -87,12 +94,32 @@ public class ConfigNetwork {
             });
         });
 
-        UnifiedNetwork.sendPacketToPlayer(serverPlayer, ConfigNetwork.CHANNEL_NAME, bufX);
+        UnifiedNetwork.sendPacketToPlayer(serverPlayer, new ConfigNetwork.Packet(bufX));
     }
 
     private static void onServerPlayerDisconnect(ServerPlayer serverPlayer) {
         PACKETS.forEach((id, packet) -> {
             packet.onServerPlayerDisconnect(serverPlayer);
         });
+    }
+
+    public record Packet(FriendlyByteBuf buf) implements CustomPacketPayload {
+        public static final Type<Packet> TYPE = new Type<>(CHANNEL_NAME);
+        public static final StreamCodec<RegistryFriendlyByteBuf, Packet> STREAM_CODEC = StreamCodec.composite(
+                StreamCodec.of(
+                        (buf, value) -> {
+                            buf.writeBytes(value);
+                            value.release();
+                        },
+                        buf -> buf
+                ),
+                Packet::buf,
+                Packet::new
+        );
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return TYPE;
+        }
     }
 }
