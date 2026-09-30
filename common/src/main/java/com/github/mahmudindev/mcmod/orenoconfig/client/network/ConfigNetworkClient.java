@@ -10,9 +10,6 @@ import io.netty.buffer.Unpooled;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.Map;
@@ -22,9 +19,13 @@ public class ConfigNetworkClient {
         ClientPlayerEvents.JOIN.register(ConfigNetworkClient::onClientPlayerJoin);
 
         UnifiedNetworkClient.registerClientPacketReceiver(
-                Packet.TYPE,
-                Packet.STREAM_CODEC,
-                (ctx, value) -> handlePackets(ctx, value.buf())
+                ConfigNetwork.Packet.TYPE,
+                (ctx, value) -> {
+                    FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+                    buf.writeBytes(value.bytes());
+                    handlePackets(ctx, buf);
+                    buf.release();
+                }
         );
 
         ClientPlayerEvents.DISCONNECT.register(ConfigNetworkClient::onClientPlayerDisconnect);
@@ -35,7 +36,7 @@ public class ConfigNetworkClient {
             return;
         }
 
-        if (!UnifiedNetworkClient.canSendPacketToServer(Packet.TYPE)) {
+        if (!UnifiedNetworkClient.canSendPacketToServer(ConfigNetwork.Packet.TYPE)) {
             return;
         }
 
@@ -55,7 +56,9 @@ public class ConfigNetworkClient {
             bufX.release();
         });
 
-        UnifiedNetworkClient.sendPacketToServer(new ConfigNetworkClient.Packet(buf));
+        byte[] bytes = new byte[buf.readableBytes()];
+        buf.readBytes(bytes);
+        UnifiedNetworkClient.sendPacketToServer(new ConfigNetwork.Packet(bytes));
     }
 
     private static void handlePackets(
@@ -79,25 +82,5 @@ public class ConfigNetworkClient {
         packets.forEach((id, packet) -> {
             packet.onClientPlayerDisconnect(localPlayer);
         });
-    }
-
-    public record Packet(FriendlyByteBuf buf) implements CustomPacketPayload {
-        public static final Type<Packet> TYPE = new Type<>(ConfigNetwork.CHANNEL_NAME);
-        public static final StreamCodec<RegistryFriendlyByteBuf, Packet> STREAM_CODEC = StreamCodec.composite(
-                StreamCodec.of(
-                        (buf, value) -> {
-                            buf.writeBytes(value);
-                            value.release();
-                        },
-                        buf -> buf
-                ),
-                Packet::buf,
-                Packet::new
-        );
-
-        @Override
-        public Type<? extends CustomPacketPayload> type() {
-            return TYPE;
-        }
     }
 }

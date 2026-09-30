@@ -32,10 +32,16 @@ public class ConfigNetwork {
                 new ModCommonConfigPacket()
         );
 
+        UnifiedNetwork.registerClientPacketCodec(Packet.TYPE, Packet.STREAM_CODEC);
+        UnifiedNetwork.registerServerPacketCodec(Packet.TYPE, Packet.STREAM_CODEC);
         UnifiedNetwork.registerServerPacketReceiver(
                 Packet.TYPE,
-                Packet.STREAM_CODEC,
-                (ctx, value) -> handlePackets(ctx, value.buf())
+                (ctx, value) -> {
+                    FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+                    buf.writeBytes(value.bytes());
+                    handlePackets(ctx, buf);
+                    buf.release();
+                }
         );
 
         PlayerEvents.DISCONNECT.register(ConfigNetwork::onServerPlayerDisconnect);
@@ -69,14 +75,15 @@ public class ConfigNetwork {
         for (int i = 0; i < count; i++) {
             ResourceLocation id = buf.readResourceLocation();
 
+            FriendlyByteBuf bufX = new FriendlyByteBuf(Unpooled.buffer());
+
             int readableBytes = buf.readVarInt();
-            FriendlyByteBuf bufX = new FriendlyByteBuf(buf.readSlice(readableBytes));
+            buf.readBytes(bufX, readableBytes);
 
             ConfigPacket packet = PACKETS.get(id);
             if (packet != null) {
                 packet.decodeRequirements(bufX, serverPlayer);
                 packets.put(id, packet);
-                continue;
             }
 
             bufX.release();
@@ -94,7 +101,9 @@ public class ConfigNetwork {
             });
         });
 
-        UnifiedNetwork.sendPacketToPlayer(serverPlayer, new ConfigNetwork.Packet(bufX));
+        byte[] bytes = new byte[bufX.readableBytes()];
+        bufX.readBytes(bytes);
+        UnifiedNetwork.sendPacketToPlayer(serverPlayer, new Packet(bytes));
     }
 
     private static void onServerPlayerDisconnect(ServerPlayer serverPlayer) {
@@ -103,17 +112,18 @@ public class ConfigNetwork {
         });
     }
 
-    public record Packet(FriendlyByteBuf buf) implements CustomPacketPayload {
+    public record Packet(byte[] bytes) implements CustomPacketPayload {
         public static final Type<Packet> TYPE = new Type<>(CHANNEL_NAME);
         public static final StreamCodec<RegistryFriendlyByteBuf, Packet> STREAM_CODEC = StreamCodec.composite(
                 StreamCodec.of(
-                        (buf, value) -> {
-                            buf.writeBytes(value);
-                            value.release();
-                        },
-                        buf -> buf
+                        FriendlyByteBuf::writeBytes,
+                        buf -> {
+                            byte[] bytes = new byte[buf.readableBytes()];
+                            buf.readBytes(bytes);
+                            return bytes;
+                        }
                 ),
-                Packet::buf,
+                Packet::bytes,
                 Packet::new
         );
 
