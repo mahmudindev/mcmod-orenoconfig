@@ -62,14 +62,15 @@ public class ConfigNetwork {
         for (int i = 0; i < count; i++) {
             ResourceLocation id = buf.readResourceLocation();
 
+            FriendlyByteBuf bufX = new FriendlyByteBuf(Unpooled.buffer());
+
             int readableBytes = buf.readVarInt();
-            FriendlyByteBuf bufX = new FriendlyByteBuf(buf.readSlice(readableBytes));
+            buf.readBytes(bufX, readableBytes);
 
             ConfigPacket packet = PACKETS.get(id);
             if (packet != null) {
                 packet.decodeRequirements(bufX, serverPlayer);
                 packets.put(id, packet);
-                continue;
             }
 
             bufX.release();
