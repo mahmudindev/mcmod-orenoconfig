@@ -1,27 +1,84 @@
-architectury {
-    common rootProject.enabled_platforms.split(',')
+plugins {
+    id 'multiloader-common'
+    id 'org.spongepowered.gradle.vanilla' version '0.3.2'
 }
 
-repositories {
-    mavenCentral()
+minecraft {
+    version(minecraft_version)
+
+    def aw = file("src/main/resources/${mod_id}.accesswidener")
+    if (aw.exists()) {
+        accessWideners(aw)
+    }
 }
 
 dependencies {
-    // We depend on Fabric Loader here to use the Fabric @Environment annotations,
-    // which get remapped to the correct annotations on each platform.
-    // Do NOT use other classes from Fabric Loader.
-    modImplementation "net.fabricmc:fabric-loader:$rootProject.fabric_loader_version"
+    compileOnly group: 'org.spongepowered', name: 'mixin', version: '0.8.5'
 
-    modImplementation(
+    compileOnly(annotationProcessor(
+            group: 'io.github.llamalad7',
+            name: 'mixinextras-common',
+            version: '0.5.4'
+    ))
+
+    implementation(
             group: "com.github.mahmudindev.mcmod.orenocommons",
             name: "orenocommons-common",
             version: rootProject.orenocommons_version
     )
-    modImplementation(
+    implementation(
             group: "com.github.mahmudindev.mcmod.orenoevents",
             name: "orenoevents-common",
             version: rootProject.orenoevents_version
     )
 
     implementation("com.electronwill.night-config:toml:$rootProject.nightconfig_version")
+}
+
+configurations {
+    commonJava {
+        canBeResolved = false
+        canBeConsumed = true
+    }
+
+    commonResources {
+        canBeResolved = false
+        canBeConsumed = true
+    }
+}
+
+artifacts {
+    commonJava sourceSets.main.java.sourceDirectories.singleFile
+    commonResources sourceSets.main.resources.sourceDirectories.singleFile
+}
+
+
+def loaderAttribute = Attribute.of(
+        'io.github.mcgradleconventions.loader',
+        String
+)
+[
+        'apiElements',
+        'runtimeElements',
+        'sourcesElements',
+        'javadocElements'
+].each { variant ->
+    configurations.named("$variant") {
+        attributes {
+            attribute(loaderAttribute, 'common')
+        }
+    }
+}
+
+sourceSets.configureEach {
+    [
+            it.compileClasspathConfigurationName,
+            it.runtimeClasspathConfigurationName
+    ].each { variant->
+        configurations.named("$variant") {
+            attributes {
+                attribute(loaderAttribute, 'common')
+            }
+        }
+    }
 }

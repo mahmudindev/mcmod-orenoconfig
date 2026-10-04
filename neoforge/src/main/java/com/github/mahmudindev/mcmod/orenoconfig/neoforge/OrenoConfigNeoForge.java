@@ -12,7 +12,7 @@ public final class OrenoConfigNeoForge {
         // Run our common setup.
         OrenoConfig.init();
 
-        if (FMLEnvironment.dist == Dist.CLIENT) {
+        if (FMLEnvironment.getDist() == Dist.CLIENT) {
             new OrenoConfigNeoForgeClient();
         }
     }

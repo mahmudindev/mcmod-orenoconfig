@@ -6,7 +6,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.ChunkPos;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -14,12 +14,12 @@ import org.joml.Vector3f;
 import java.util.*;
 
 public class ConfigPacketParser {
-    private static final Map<ResourceLocation, ValueParser<?>> VALUE_PARSERS = new HashMap<>();
-    private static final Map<Class<?>, ResourceLocation> VALUE_PARSER_ID_CLASSES = new HashMap<>();
-    private static final ResourceLocation OBJ_ARR_VALUE_PARSER_ID;
+    private static final Map<Identifier, ValueParser<?>> VALUE_PARSERS = new HashMap<>();
+    private static final Map<Class<?>, Identifier> VALUE_PARSER_ID_CLASSES = new HashMap<>();
+    private static final Identifier OBJ_ARR_VALUE_PARSER_ID;
 
     public static <T> void registerValueParser(
-            ResourceLocation id,
+            Identifier id,
             Class<T> clazz,
             ValueParser<T> valueParser
     ) {
@@ -35,13 +35,13 @@ public class ConfigPacketParser {
 
         FriendlyByteBuf bufX = new FriendlyByteBuf(Unpooled.buffer());
 
-        ResourceLocation id = getValueParserId(value.getClass());
+        Identifier id = getValueParserId(value.getClass());
         if (id == null) {
             buf.writeBoolean(false);
             return;
         }
         buf.writeBoolean(true);
-        bufX.writeResourceLocation(id);
+        bufX.writeIdentifier(id);
         ((ValueParser) getValueParser(id)).encode(bufX, value);
 
         buf.writeVarInt(bufX.readableBytes());
@@ -58,7 +58,7 @@ public class ConfigPacketParser {
         int readableBytes = buf.readVarInt();
         FriendlyByteBuf bufX = new FriendlyByteBuf(buf.readSlice(readableBytes));
 
-        ResourceLocation id = bufX.readResourceLocation();
+        Identifier id = bufX.readIdentifier();
         ValueParser valueParser = getValueParser(id);
         if (valueParser != null) {
             Object o = valueParser.decode(bufX);
@@ -70,12 +70,12 @@ public class ConfigPacketParser {
         return null;
     }
 
-    private static ValueParser<?> getValueParser(ResourceLocation id) {
+    private static ValueParser<?> getValueParser(Identifier id) {
         return VALUE_PARSERS.get(id);
     }
 
-    private static ResourceLocation getValueParserId(Class<?> clazz) {
-        ResourceLocation id = VALUE_PARSER_ID_CLASSES.get(clazz);
+    private static Identifier getValueParserId(Class<?> clazz) {
+        Identifier id = VALUE_PARSER_ID_CLASSES.get(clazz);
         if (id != null) {
             return id;
         }
@@ -86,7 +86,7 @@ public class ConfigPacketParser {
 
         for (Class<?> claxx : VALUE_PARSER_ID_CLASSES.keySet()) {
             if (claxx.isAssignableFrom(clazz)) {
-                ResourceLocation idX = VALUE_PARSER_ID_CLASSES.get(claxx);
+                Identifier idX = VALUE_PARSER_ID_CLASSES.get(claxx);
                 VALUE_PARSER_ID_CLASSES.put(claxx, idX);
                 return idX;
             }
@@ -103,7 +103,7 @@ public class ConfigPacketParser {
 
     static {
         registerValueParser(
-                ResourceLocation.fromNamespaceAndPath(OrenoConfig.MOD_ID, "byte"),
+                Identifier.fromNamespaceAndPath(OrenoConfig.MOD_ID, "byte"),
                 Byte.class,
                 new ValueParser<>() {
                     @Override
@@ -119,7 +119,7 @@ public class ConfigPacketParser {
         );
 
         registerValueParser(
-                ResourceLocation.fromNamespaceAndPath(OrenoConfig.MOD_ID, "byte_arr"),
+                Identifier.fromNamespaceAndPath(OrenoConfig.MOD_ID, "byte_arr"),
                 byte[].class,
                 new ValueParser<>() {
                     @Override
@@ -135,7 +135,7 @@ public class ConfigPacketParser {
         );
 
         registerValueParser(
-                ResourceLocation.fromNamespaceAndPath(OrenoConfig.MOD_ID, "short"),
+                Identifier.fromNamespaceAndPath(OrenoConfig.MOD_ID, "short"),
                 Short.class,
                 new ValueParser<>() {
                     @Override
@@ -151,7 +151,7 @@ public class ConfigPacketParser {
         );
 
         registerValueParser(
-                ResourceLocation.fromNamespaceAndPath(OrenoConfig.MOD_ID, "short_arr"),
+                Identifier.fromNamespaceAndPath(OrenoConfig.MOD_ID, "short_arr"),
                 short[].class,
                 new ValueParser<>() {
                     @Override
@@ -177,7 +177,7 @@ public class ConfigPacketParser {
         );
 
         registerValueParser(
-                ResourceLocation.fromNamespaceAndPath(OrenoConfig.MOD_ID, "int"),
+                Identifier.fromNamespaceAndPath(OrenoConfig.MOD_ID, "int"),
                 Integer.class,
                 new ValueParser<>() {
                     @Override
@@ -193,7 +193,7 @@ public class ConfigPacketParser {
         );
 
         registerValueParser(
-                ResourceLocation.fromNamespaceAndPath(OrenoConfig.MOD_ID, "int_arr"),
+                Identifier.fromNamespaceAndPath(OrenoConfig.MOD_ID, "int_arr"),
                 int[].class,
                 new ValueParser<>() {
                     @Override
@@ -209,7 +209,7 @@ public class ConfigPacketParser {
         );
 
         registerValueParser(
-                ResourceLocation.fromNamespaceAndPath(OrenoConfig.MOD_ID, "long"),
+                Identifier.fromNamespaceAndPath(OrenoConfig.MOD_ID, "long"),
                 Long.class,
                 new ValueParser<>() {
                     @Override
@@ -225,7 +225,7 @@ public class ConfigPacketParser {
         );
 
         registerValueParser(
-                ResourceLocation.fromNamespaceAndPath(OrenoConfig.MOD_ID, "long_arr"),
+                Identifier.fromNamespaceAndPath(OrenoConfig.MOD_ID, "long_arr"),
                 long[].class,
                 new ValueParser<>() {
                     @Override
@@ -251,7 +251,7 @@ public class ConfigPacketParser {
         );
 
         registerValueParser(
-                ResourceLocation.fromNamespaceAndPath(OrenoConfig.MOD_ID, "float"),
+                Identifier.fromNamespaceAndPath(OrenoConfig.MOD_ID, "float"),
                 Float.class,
                 new ValueParser<>() {
                     @Override
@@ -267,7 +267,7 @@ public class ConfigPacketParser {
         );
 
         registerValueParser(
-                ResourceLocation.fromNamespaceAndPath(OrenoConfig.MOD_ID, "float_arr"),
+                Identifier.fromNamespaceAndPath(OrenoConfig.MOD_ID, "float_arr"),
                 float[].class,
                 new ValueParser<>() {
                     @Override
@@ -293,7 +293,7 @@ public class ConfigPacketParser {
         );
 
         registerValueParser(
-                ResourceLocation.fromNamespaceAndPath(OrenoConfig.MOD_ID, "double"),
+                Identifier.fromNamespaceAndPath(OrenoConfig.MOD_ID, "double"),
                 Double.class,
                 new ValueParser<>() {
                     @Override
@@ -309,7 +309,7 @@ public class ConfigPacketParser {
         );
 
         registerValueParser(
-                ResourceLocation.fromNamespaceAndPath(OrenoConfig.MOD_ID, "double_arr"),
+                Identifier.fromNamespaceAndPath(OrenoConfig.MOD_ID, "double_arr"),
                 double[].class,
                 new ValueParser<>() {
                     @Override
@@ -335,7 +335,7 @@ public class ConfigPacketParser {
         );
 
         registerValueParser(
-                ResourceLocation.fromNamespaceAndPath(OrenoConfig.MOD_ID, "char"),
+                Identifier.fromNamespaceAndPath(OrenoConfig.MOD_ID, "char"),
                 Character.class,
                 new ValueParser<>() {
                     @Override
@@ -351,7 +351,7 @@ public class ConfigPacketParser {
         );
 
         registerValueParser(
-                ResourceLocation.fromNamespaceAndPath(OrenoConfig.MOD_ID, "char_arr"),
+                Identifier.fromNamespaceAndPath(OrenoConfig.MOD_ID, "char_arr"),
                 char[].class,
                 new ValueParser<>() {
                     @Override
@@ -377,7 +377,7 @@ public class ConfigPacketParser {
         );
 
         registerValueParser(
-                ResourceLocation.fromNamespaceAndPath(OrenoConfig.MOD_ID, "boolean"),
+                Identifier.fromNamespaceAndPath(OrenoConfig.MOD_ID, "boolean"),
                 Boolean.class,
                 new ValueParser<>() {
                     @Override
@@ -393,7 +393,7 @@ public class ConfigPacketParser {
         );
 
         registerValueParser(
-                ResourceLocation.fromNamespaceAndPath(OrenoConfig.MOD_ID, "boolean_arr"),
+                Identifier.fromNamespaceAndPath(OrenoConfig.MOD_ID, "boolean_arr"),
                 boolean[].class,
                 new ValueParser<>() {
                     @Override
@@ -419,7 +419,7 @@ public class ConfigPacketParser {
         );
 
         registerValueParser(
-                ResourceLocation.fromNamespaceAndPath(OrenoConfig.MOD_ID, "string"),
+                Identifier.fromNamespaceAndPath(OrenoConfig.MOD_ID, "string"),
                 String.class,
                 new ValueParser<>() {
                     @Override
@@ -435,7 +435,7 @@ public class ConfigPacketParser {
         );
 
         registerValueParser(
-                ResourceLocation.fromNamespaceAndPath(OrenoConfig.MOD_ID, "list"),
+                Identifier.fromNamespaceAndPath(OrenoConfig.MOD_ID, "list"),
                 List.class,
                 new ValueParser<>() {
                     @Override
@@ -461,7 +461,7 @@ public class ConfigPacketParser {
         );
 
         registerValueParser(
-                ResourceLocation.fromNamespaceAndPath(OrenoConfig.MOD_ID, "set"),
+                Identifier.fromNamespaceAndPath(OrenoConfig.MOD_ID, "set"),
                 Set.class,
                 new ValueParser<>() {
                     @Override
@@ -487,7 +487,7 @@ public class ConfigPacketParser {
         );
 
         registerValueParser(
-                ResourceLocation.fromNamespaceAndPath(OrenoConfig.MOD_ID, "map"),
+                Identifier.fromNamespaceAndPath(OrenoConfig.MOD_ID, "map"),
                 Map.class,
                 new ValueParser<>() {
                     @Override
@@ -516,7 +516,7 @@ public class ConfigPacketParser {
         );
 
         registerValueParser(
-                ResourceLocation.fromNamespaceAndPath(OrenoConfig.MOD_ID, "uuid"),
+                Identifier.fromNamespaceAndPath(OrenoConfig.MOD_ID, "uuid"),
                 UUID.class,
                 new ValueParser<>() {
                     @Override
@@ -532,7 +532,7 @@ public class ConfigPacketParser {
         );
 
         registerValueParser(
-                ResourceLocation.fromNamespaceAndPath(OrenoConfig.MOD_ID, "vector3f"),
+                Identifier.fromNamespaceAndPath(OrenoConfig.MOD_ID, "vector3f"),
                 Vector3f.class,
                 new ValueParser<>() {
                     @Override
@@ -548,7 +548,7 @@ public class ConfigPacketParser {
         );
 
         registerValueParser(
-                ResourceLocation.fromNamespaceAndPath(OrenoConfig.MOD_ID, "quaternionf"),
+                Identifier.fromNamespaceAndPath(OrenoConfig.MOD_ID, "quaternionf"),
                 Quaternionf.class,
                 new ValueParser<>() {
                     @Override
@@ -564,23 +564,23 @@ public class ConfigPacketParser {
         );
 
         registerValueParser(
-                ResourceLocation.fromNamespaceAndPath(OrenoConfig.MOD_ID, "resourcelocation"),
-                ResourceLocation.class,
+                Identifier.fromNamespaceAndPath(OrenoConfig.MOD_ID, "identifier"),
+                Identifier.class,
                 new ValueParser<>() {
                     @Override
-                    public void encode(FriendlyByteBuf buf, ResourceLocation value) {
-                        buf.writeResourceLocation(value);
+                    public void encode(FriendlyByteBuf buf, Identifier value) {
+                        buf.writeIdentifier(value);
                     }
 
                     @Override
-                    public ResourceLocation decode(FriendlyByteBuf buf) {
-                        return buf.readResourceLocation();
+                    public Identifier decode(FriendlyByteBuf buf) {
+                        return buf.readIdentifier();
                     }
                 }
         );
 
         registerValueParser(
-                ResourceLocation.fromNamespaceAndPath(OrenoConfig.MOD_ID, "blockpos"),
+                Identifier.fromNamespaceAndPath(OrenoConfig.MOD_ID, "blockpos"),
                 BlockPos.class,
                 new ValueParser<>() {
                     @Override
@@ -596,7 +596,7 @@ public class ConfigPacketParser {
         );
 
         registerValueParser(
-                ResourceLocation.fromNamespaceAndPath(OrenoConfig.MOD_ID, "chunkpos"),
+                Identifier.fromNamespaceAndPath(OrenoConfig.MOD_ID, "chunkpos"),
                 ChunkPos.class,
                 new ValueParser<>() {
                     @Override
@@ -612,23 +612,23 @@ public class ConfigPacketParser {
         );
 
         registerValueParser(
-                ResourceLocation.fromNamespaceAndPath(OrenoConfig.MOD_ID, "sectionpos"),
+                Identifier.fromNamespaceAndPath(OrenoConfig.MOD_ID, "sectionpos"),
                 SectionPos.class,
                 new ValueParser<>() {
                     @Override
                     public void encode(FriendlyByteBuf buf, SectionPos value) {
-                        buf.writeSectionPos(value);
+                        buf.writeLong(value.asLong());
                     }
 
                     @Override
                     public SectionPos decode(FriendlyByteBuf buf) {
-                        return buf.readSectionPos();
+                        return SectionPos.of(buf.readLong());
                     }
                 }
         );
 
         registerValueParser(
-                ResourceLocation.fromNamespaceAndPath(OrenoConfig.MOD_ID, "nbt"),
+                Identifier.fromNamespaceAndPath(OrenoConfig.MOD_ID, "nbt"),
                 CompoundTag.class,
                 new ValueParser<>() {
                     @Override
@@ -643,7 +643,7 @@ public class ConfigPacketParser {
                 }
         );
 
-        OBJ_ARR_VALUE_PARSER_ID = ResourceLocation.fromNamespaceAndPath(OrenoConfig.MOD_ID, "obj_arr");
+        OBJ_ARR_VALUE_PARSER_ID = Identifier.fromNamespaceAndPath(OrenoConfig.MOD_ID, "obj_arr");
         registerValueParser(
                 OBJ_ARR_VALUE_PARSER_ID,
                 Object[].class,

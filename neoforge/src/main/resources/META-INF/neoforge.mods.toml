@@ -1,31 +1,31 @@
 modLoader = "javafml"
-loaderVersion = "[4,)"
+loaderVersion = "[${neoforge_loader_version},)"
 issueTrackerURL = "https://github.com/mahmudindev/mcmod-orenoconfig/issues"
-license = "ARR"
+license = "${mod_license}"
 
 [[mods]]
-modId = "orenoconfig"
+modId = "${mod_id}"
 version = "${version}"
-displayName = "Oreno Config"
-authors = "mahmudindev"
+displayName = "${mod_name}"
+authors = "${mod_authors}"
 description = '''
-Provide config across mod loader.
+${description}
 '''
-logoFile = "assets/orenoconfig/icon.png"
+logoFile = "assets/${mod_id}/icon.png"
 
-[[dependencies.orenoconfig]]
+[[dependencies.${mod_id}]]
 modId = "neoforge"
 type = "required"
-versionRange = "[21.1,)"
+versionRange = "[${minecraft_version}.${neoforge_version},)"
 ordering = "NONE"
 side = "BOTH"
 
-[[dependencies.orenoconfig]]
+[[dependencies.${mod_id}]]
 modId = "minecraft"
 type = "required"
-versionRange = "[1.21.1,)"
+versionRange = "[${minecraft_version},)"
 ordering = "NONE"
 side = "BOTH"
 
 [[mixins]]
-config = "orenoconfig.mixins.json"
+config = "${mod_id}.mixins.json"

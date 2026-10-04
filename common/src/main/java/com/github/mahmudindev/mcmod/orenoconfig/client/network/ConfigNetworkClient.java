@@ -10,7 +10,7 @@ import io.netty.buffer.Unpooled;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.Map;
 
@@ -32,7 +32,8 @@ public class ConfigNetworkClient {
     }
 
     private static void onClientPlayerJoin(LocalPlayer localPlayer) {
-        if (localPlayer.getServer() != null) {
+        Minecraft client = Minecraft.getInstance();
+        if (client.getSingleplayerServer() != null) {
             return;
         }
 
@@ -42,10 +43,10 @@ public class ConfigNetworkClient {
 
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
 
-        Map<ResourceLocation, ConfigPacket> packets = ConfigNetwork.getPackets();
+        Map<Identifier, ConfigPacket> packets = ConfigNetwork.getPackets();
         buf.writeVarInt(packets.size());
         packets.forEach((id, packet) -> {
-            buf.writeResourceLocation(id);
+            buf.writeIdentifier(id);
 
             FriendlyByteBuf bufX = new FriendlyByteBuf(Unpooled.buffer());
 
@@ -70,7 +71,7 @@ public class ConfigNetworkClient {
 
             int count = bufX.readVarInt();
             for (int i = 0; i < count; i++) {
-                ResourceLocation id = bufX.readResourceLocation();
+                Identifier id = bufX.readIdentifier();
                 ConfigPacket packet = ConfigNetwork.getPacket(id);
                 packet.decode(bufX, client);
             }
@@ -78,7 +79,7 @@ public class ConfigNetworkClient {
     }
 
     private static void onClientPlayerDisconnect(LocalPlayer localPlayer) {
-        Map<ResourceLocation, ConfigPacket> packets = ConfigNetwork.getPackets();
+        Map<Identifier, ConfigPacket> packets = ConfigNetwork.getPackets();
         packets.forEach((id, packet) -> {
             packet.onClientPlayerDisconnect(localPlayer);
         });

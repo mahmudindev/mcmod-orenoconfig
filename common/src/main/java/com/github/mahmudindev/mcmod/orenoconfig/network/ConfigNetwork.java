@@ -12,7 +12,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -20,15 +20,15 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ConfigNetwork {
-    public static final ResourceLocation CHANNEL_NAME = ResourceLocation.fromNamespaceAndPath(
+    public static final Identifier CHANNEL_NAME = Identifier.fromNamespaceAndPath(
             OrenoConfig.MOD_ID,
             "default"
     );
-    private static final Map<ResourceLocation, ConfigPacket> PACKETS = new HashMap<>();
+    private static final Map<Identifier, ConfigPacket> PACKETS = new HashMap<>();
 
     public static void init() {
         registerPacket(
-                ResourceLocation.fromNamespaceAndPath(OrenoConfig.MOD_ID, "common"),
+                Identifier.fromNamespaceAndPath(OrenoConfig.MOD_ID, "common"),
                 new ModCommonConfigPacket()
         );
 
@@ -47,7 +47,7 @@ public class ConfigNetwork {
         PlayerEvents.DISCONNECT.register(ConfigNetwork::onServerPlayerDisconnect);
     }
 
-    public static void registerPacket(ResourceLocation id, ConfigPacket packet) {
+    public static void registerPacket(Identifier id, ConfigPacket packet) {
         if (PACKETS.containsKey(id)) {
             throw new IllegalStateException("Config packet already exists!");
         }
@@ -55,11 +55,11 @@ public class ConfigNetwork {
         PACKETS.put(id, packet);
     }
 
-    public static ConfigPacket getPacket(ResourceLocation id) {
+    public static ConfigPacket getPacket(Identifier id) {
         return PACKETS.get(id);
     }
 
-    public static Map<ResourceLocation, ConfigPacket> getPackets() {
+    public static Map<Identifier, ConfigPacket> getPackets() {
         return PACKETS;
     }
 
@@ -67,13 +67,13 @@ public class ConfigNetwork {
             UnifiedNetworkPacket.Context ctx,
             FriendlyByteBuf buf
     ) {
-        Map<ResourceLocation, ConfigPacket> packets = new HashMap<>();
+        Map<Identifier, ConfigPacket> packets = new HashMap<>();
 
         ServerPlayer serverPlayer = ctx.player();
 
         int count = buf.readVarInt();
         for (int i = 0; i < count; i++) {
-            ResourceLocation id = buf.readResourceLocation();
+            Identifier id = buf.readIdentifier();
 
             FriendlyByteBuf bufX = new FriendlyByteBuf(Unpooled.buffer());
 
@@ -96,7 +96,7 @@ public class ConfigNetwork {
 
             bufZ.writeVarInt(packets.size());
             packets.forEach((id, packet) -> {
-                bufZ.writeResourceLocation(id);
+                bufZ.writeIdentifier(id);
                 packet.encode(bufZ, server, serverPlayer);
             });
         });
