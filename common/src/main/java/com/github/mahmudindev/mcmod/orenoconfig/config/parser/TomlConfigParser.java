@@ -34,7 +34,10 @@ public class TomlConfigParser implements ConfigParser {
 
             if (child.isLeaf()) {
                 JsonElement gson = this.gsonIntermediary.toJsonTree(child.getValue());
-                toml.set(key, this.serializeLeafNode(gson));
+                Object value = this.serializeLeafNode(gson);
+                if (value != null) {
+                    toml.set(key, value);
+                }
                 continue;
             }
 

@@ -1,12 +1,12 @@
 package com.github.mahmudindev.mcmod.orenoconfig.config.configs;
 
 import com.github.mahmudindev.mcmod.orenoconfig.config.Config;
+import com.github.mahmudindev.mcmod.orenoconfig.config.ConfigParseException;
 import com.github.mahmudindev.mcmod.orenoconfig.config.parser.ConfigParser;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.nio.file.Path;
 
 public class FileConfig extends Config {
@@ -86,8 +86,8 @@ public class FileConfig extends Config {
 
         try (FileReader reader = new FileReader(file)) {
             this.load(this.parser, reader);
-        } catch (IOException e) {
-            throw new RuntimeException(String.format("Failed to read %s file", name), e);
+        } catch (Exception e) {
+            throw new ConfigParseException(String.format("Failed to read %s file", name), e);
         }
     }
 
@@ -103,8 +103,8 @@ public class FileConfig extends Config {
 
         try (FileWriter writer = new FileWriter(file)) {
             this.save(this.parser, writer);
-        } catch (IOException e) {
-            throw new RuntimeException(String.format("Failed to write %s file", name), e);
+        } catch (Exception e) {
+            throw new ConfigParseException(String.format("Failed to write %s file", name), e);
         }
     }
 }
