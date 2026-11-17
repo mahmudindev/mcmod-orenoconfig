@@ -36,12 +36,12 @@ public class ConfigNetwork {
         UnifiedNetwork.registerServerPacketCodec(Packet.TYPE, Packet.STREAM_CODEC);
         UnifiedNetwork.registerServerPacketReceiver(
                 Packet.TYPE,
-                (ctx, value) -> {
+                (ctx, value) -> ctx.execute(() ->{
                     FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
                     buf.writeBytes(value.bytes());
                     handlePackets(ctx, buf);
                     buf.release();
-                }
+                })
         );
 
         PlayerEvents.DISCONNECT.register(ConfigNetwork::onServerPlayerDisconnect);
