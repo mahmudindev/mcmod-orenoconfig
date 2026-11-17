@@ -20,12 +20,12 @@ public class ConfigNetworkClient {
 
         UnifiedNetworkClient.registerClientPacketReceiver(
                 ConfigNetwork.Packet.TYPE,
-                (ctx, value) -> {
+                (ctx, value) -> ctx.execute(() -> {
                     FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
                     buf.writeBytes(value.bytes());
                     handlePackets(ctx, buf);
                     buf.release();
-                }
+                })
         );
 
         ClientPlayerEvents.DISCONNECT.register(ConfigNetworkClient::onClientPlayerDisconnect);
