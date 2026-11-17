@@ -20,7 +20,7 @@ public class ConfigNetworkClient {
 
         UnifiedNetworkClient.registerClientPacketReceiver(
                 ConfigNetwork.CHANNEL_NAME,
-                ConfigNetworkClient::handlePackets
+                (ctx, buf) -> ctx.execute(() -> handlePackets(ctx, buf))
         );
 
         ClientPlayerEvents.DISCONNECT.register(ConfigNetworkClient::onClientPlayerDisconnect);

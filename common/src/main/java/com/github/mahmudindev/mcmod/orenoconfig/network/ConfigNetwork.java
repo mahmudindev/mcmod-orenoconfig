@@ -29,7 +29,10 @@ public class ConfigNetwork {
                 new ModCommonConfigPacket()
         );
 
-        UnifiedNetwork.registerServerPacketReceiver(CHANNEL_NAME, ConfigNetwork::handlePackets);
+        UnifiedNetwork.registerServerPacketReceiver(
+                CHANNEL_NAME,
+                (ctx, buf) -> ctx.execute(() -> handlePackets(ctx, buf))
+        );
 
         PlayerEvents.DISCONNECT.register(ConfigNetwork::onServerPlayerDisconnect);
     }
